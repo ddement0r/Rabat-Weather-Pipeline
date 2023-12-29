@@ -1,6 +1,6 @@
 # Creating buckets for the data
 
-resource "google_storage_bucket" "Historical Raw Data Bucket" {
+resource "google_storage_bucket" "Historical_Raw_Data_Bucket" {
   name                     = var.gcs_bucket
   location                 = var.location
   storage_class            = "STANDARD"
@@ -8,7 +8,7 @@ resource "google_storage_bucket" "Historical Raw Data Bucket" {
   public_access_prevention = "enforced"
 }
 
-resource "google_storage_bucket" "Temp Raw Data Bucket" {
+resource "google_storage_bucket" "Temp_Raw_Data_Bucket" {
   name                     = var.temp_gcs_bucket
   location                 = var.location
   storage_class            = "STANDARD"
@@ -18,7 +18,7 @@ resource "google_storage_bucket" "Temp Raw Data Bucket" {
 
 # Creating Cloud Functions' Buckets
 
-resource "google_storage_bucket" "Initial Data Retrieval Function Bucket" {
+resource "google_storage_bucket" "Initial_Data_Retrieval_Function_Bucket" {
   name                     = var.initial_data_retrieval_function
   location                 = var.location
   storage_class            = "STANDARD"
@@ -26,7 +26,7 @@ resource "google_storage_bucket" "Initial Data Retrieval Function Bucket" {
   public_access_prevention = "enforced"
 }
 
-resource "google_storage_bucket" "Daily Data Retrieval Function Bucket" {
+resource "google_storage_bucket" "Daily_Data_Retrieval_Function_Bucket" {
   name                     = var.daily_data_retrieval_function
   location                 = var.location
   storage_class            = "STANDARD"
@@ -34,7 +34,7 @@ resource "google_storage_bucket" "Daily Data Retrieval Function Bucket" {
   public_access_prevention = "enforced"
 }
 
-resource "google_storage_bucket" "Initial Data Processing Function Bucket" {
+resource "google_storage_bucket" "Initial_Data_Processing_Function_Bucket" {
   name                     = var.initial_data_processing_function
   location                 = var.location
   storage_class            = "STANDARD"
@@ -42,7 +42,7 @@ resource "google_storage_bucket" "Initial Data Processing Function Bucket" {
   public_access_prevention = "enforced"
 }
 
-resource "google_storage_bucket" "Daily Data Processing Function Bucket" {
+resource "google_storage_bucket" "Daily_Data_Processing_Function_Bucket" {
   name                     = var.daily_data_processing_function
   location                 = var.location
   storage_class            = "STANDARD"
@@ -242,7 +242,7 @@ resource "google_cloudfunctions_function" "daily-data-processing" {
   ]
 }
 
-resource "google_bigquery_dataset" "Weather Dataset" {
+resource "google_bigquery_dataset" "Weather_Dataset" {
   dataset_id    = var.bigquery_dataset
   friendly_name = var.bigquery_dataset
   description   = "This dataset contains the weather data for the city of Rabat."
