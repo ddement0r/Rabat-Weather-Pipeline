@@ -97,11 +97,11 @@ resource "google_cloud_scheduler_job" "initial_data_retrieval" {
   time_zone   = "UTC + 1"
   region      = var.region
   http_target {
-    uri         = google_cloudfunctions_function.initial-data-retrieval.https_trigger_url
+    uri         = google_cloudfunctions2_function.initial-data-retrieval.service_config[0].uri
     http_method = "GET"
   }
   depends_on = [
-    google_cloudfunctions_function.initial-data-retrieval
+    google_cloudfunctions2_function.initial-data-retrieval
   ]
 }
 
@@ -112,42 +112,52 @@ resource "google_cloud_scheduler_job" "daily_data_retrieval" {
   time_zone   = "UTC + 1"
   region      = var.region
   http_target {
-    uri         = google_cloudfunctions_function.daily-data-retrieval.https_trigger_url
+    uri         = google_cloudfunctions2_function.daily-data-retrieval.service_config[0].uri
     http_method = "GET"
   }
   depends_on = [
-    google_cloudfunctions_function.daily-data-retrieval
+    google_cloudfunctions2_function.daily-data-retrieval
   ]
 }
 
 # Creating Cloud Function for Data Ingestion
 
-resource "google_cloudfunctions_function" "initial-data-retrieval" {
-  name                  = "initial-data-retrieval"
-  description           = "This function is responsible for retrieving the historical weather data from the API and storing it in a GCS bucket."
-  runtime               = "python38"
-  entry_point           = "get_weather_data"
-  timeout               = 3600
-  region                = var.region
-  available_memory_mb   = 2048
-  source_archive_bucket = google_storage_bucket.Initial_Data_Retrieval_Function_Bucket.name
-  source_archive_object = google_storage_bucket_object.initial_data_retrieval_function.name
-  service_account_email = var.appengine_service_account
-  trigger_http          = true
-  environment_variables = {
+resource "google_cloudfunctions2_function" "initial-data-retrieval" {
+  name        = "initial-data-retrieval"
+  description = "This function is responsible for retrieving the historical weather data from the API and storing it in a GCS bucket."
+  location    = var.region
+  build_config {
+    runtime     = "python38"
+    entry_point = "get_weather_data"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.Initial_Data_Retrieval_Function_Bucket.name
+        object = google_storage_bucket_object.initial_data_retrieval_function.name
+      }
+    }
+    environment_variables = {
 
-    "WEATHER_API_BASE_URL" = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline",
-    "WEATHER_LOCATION"     = "Rabat",
-    "UNIT_GROUP"           = "metric",
-    "CONTENT_TYPE"         = "CSV",
-    "INCLUDE_PARAM"        = "days",
-    "GCS_BUCKET"           = var.gcs_bucket,
-    "SCHEDULER_JOB_NAME"   = var.initial_data_retrieval_schedule,
-    "GCP_LOCATION"         = var.region,
-    "GCP_PROJECT_ID"       = var.project_id,
-    "WEATHER_API_KEY"      = var.api_keyV1
-
+      "WEATHER_API_BASE_URL"        = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
+      "WEATHER_LOCATION"            = "Rabat"
+      "UNIT_GROUP"                  = "metric"
+      "CONTENT_TYPE"                = "CSV"
+      "INCLUDE_PARAM"               = "days"
+      "GCS_BUCKET"                  = var.gcs_bucket
+      "SCHEDULER_JOB_NAME"          = var.initial_data_retrieval_schedule
+      "GCP_LOCATION"                = var.region
+      "GCP_PROJECT_ID"              = var.project_id
+      "WEATHER_API_KEY"             = var.api_keyV1
+      "INITIAL_PROCESSING_ENDPOINT" = google_cloudfunctions2_function.initial-data-processing.service_config[0].uri
+    }
   }
+  service_config {
+    max_instance_count    = 2
+    available_memory      = "2048M"
+    timeout_seconds       = 3600
+    service_account_email = var.appengine_service_account
+    ingress_settings      = "ALLOW_ALL"
+  }
+
   depends_on = [
     google_storage_bucket.Initial_Data_Retrieval_Function_Bucket,
     google_storage_bucket_object.initial_data_retrieval_function,
@@ -155,33 +165,44 @@ resource "google_cloudfunctions_function" "initial-data-retrieval" {
   ]
 }
 
-resource "google_cloudfunctions_function" "daily-data-retrieval" {
-  name                  = "daily-data-retrieval"
-  description           = "This function is responsible for retrieving the daily weather data from the API and storing it in a GCS bucket."
-  runtime               = "python38"
-  entry_point           = "get_weather_data"
-  timeout               = 3600
-  region                = var.region
-  available_memory_mb   = 2048
-  source_archive_bucket = google_storage_bucket.Daily_Data_Retrieval_Function_Bucket.name
-  source_archive_object = google_storage_bucket_object.daily_data_retrieval_function.name
-  service_account_email = var.appengine_service_account
-  trigger_http          = true
-  environment_variables = {
+resource "google_cloudfunctions2_function" "daily-data-retrieval" {
+  name        = "daily-data-retrieval"
+  description = "This function is responsible for retrieving the daily weather data from the API and storing it in a GCS bucket."
+  location    = var.region
+  build_config {
+    runtime     = "python38"
+    entry_point = "get_weather_data"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.Daily_Data_Retrieval_Function_Bucket.name
+        object = google_storage_bucket_object.daily_data_retrieval_function.name
+      }
+    }
+    environment_variables = {
 
-    WEATHER_API_BASE_URL = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline",
-    WEATHER_LOCATION     = Rabat
-    UNIT_GROUP           = metric
-    CONTENT_TYPE         = CSV
-    INCLUDE_PARAM        = days
-    GCS_BUCKET           = var.gcs_bucket
-    SCHEDULER_JOB_NAME   = var.daily_data_retrieval_schedule
-    GCP_LOCATION         = var.region
-    GCP_PROJECT_ID       = var.project_id
-    TEMP_GCS_BUCKET      = var.temp_gcs_bucket
-    "WEATHER_API_KEY"    = var.api_keyV1
+      WEATHER_API_BASE_URL        = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
+      WEATHER_LOCATION            = "Rabat"
+      UNIT_GROUP                  = "metric"
+      CONTENT_TYPE                = "CSV"
+      INCLUDE_PARAM               = "days"
+      GCS_BUCKET                  = var.gcs_bucket
+      SCHEDULER_JOB_NAME          = var.daily_data_retrieval_schedule
+      GCP_LOCATION                = var.region
+      GCP_PROJECT_ID              = var.project_id
+      TEMP_GCS_BUCKET             = var.temp_gcs_bucket
+      "WEATHER_API_KEY"           = var.api_keyV1
+      "DAILY_PROCESSING_ENDPOINT" = google_cloudfunctions2_function.daily-data-processing.service_config[0].uri
 
+    }
   }
+  service_config {
+    max_instance_count    = 2
+    available_memory      = "2048M"
+    timeout_seconds       = 3600
+    service_account_email = var.appengine_service_account
+    ingress_settings      = "ALLOW_ALL"
+  }
+
   depends_on = [
     google_storage_bucket.Daily_Data_Retrieval_Function_Bucket,
     google_storage_bucket_object.daily_data_retrieval_function,
@@ -189,26 +210,34 @@ resource "google_cloudfunctions_function" "daily-data-retrieval" {
   ]
 }
 
-resource "google_cloudfunctions_function" "initial-data-processing" {
-  name                  = "load-to-bq"
-  description           = "This function is responsible for processing the historical weather data and storing it in a BigQuery table."
-  runtime               = "python38"
-  entry_point           = "process_csv_data"
-  timeout               = 3600
-  region                = var.region
-  available_memory_mb   = 2048
-  source_archive_bucket = google_storage_bucket.Initial_Data_Processing_Function_Bucket.name
-  source_archive_object = google_storage_bucket_object.initial_data_processing_function.name
-  service_account_email = var.appengine_service_account
-  trigger_http          = true
-  environment_variables = {
+resource "google_cloudfunctions2_function" "initial-data-processing" {
+  name        = "load-to-bq"
+  description = "This function is responsible for processing the historical weather data and storing it in a BigQuery table."
+  location    = var.region
 
-    BIGQUERY_TABLE   = var.bigquery_table
-    BIGQUERY_DATASET = var.bigquery_dataset
-    GCS_BUCKET       = var.gcs_bucket
-
-
+  build_config {
+    runtime     = "python38"
+    entry_point = "process_csv_data"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.Initial_Data_Processing_Function_Bucket.name
+        object = google_storage_bucket_object.initial_data_processing_function.name
+      }
+    }
+    environment_variables = {
+      BIGQUERY_TABLE   = var.bigquery_table
+      BIGQUERY_DATASET = var.bigquery_dataset
+      GCS_BUCKET       = var.gcs_bucket
+    }
   }
+  service_config {
+    max_instance_count    = 2
+    available_memory      = "2048M"
+    timeout_seconds       = 3600
+    service_account_email = var.appengine_service_account
+    ingress_settings      = "ALLOW_ALL"
+  }
+
   depends_on = [
     google_storage_bucket.Initial_Data_Processing_Function_Bucket,
     google_storage_bucket_object.initial_data_processing_function,
@@ -216,24 +245,33 @@ resource "google_cloudfunctions_function" "initial-data-processing" {
   ]
 }
 
-resource "google_cloudfunctions_function" "daily-data-processing" {
-  name                  = "daily-data-processing"
-  description           = "This function is responsible for processing the daily weather data and storing it in a BigQuery table."
-  runtime               = "python38"
-  entry_point           = "process_csv_data"
-  timeout               = 3600
-  region                = var.region
-  available_memory_mb   = 2048
-  source_archive_bucket = google_storage_bucket.Daily_Data_Processing_Function_Bucket.name
-  source_archive_object = google_storage_bucket_object.daily_data_processing_function.name
-  service_account_email = var.appengine_service_account
-  trigger_http          = true
-  environment_variables = {
+resource "google_cloudfunctions2_function" "daily-data-processing" {
+  name        = "daily-data-processing"
+  location    = var.region
+  description = "This function is responsible for processing the daily weather data and storing it in a BigQuery table."
+  build_config {
+    runtime     = "python38"
+    entry_point = "process_csv_data"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.Daily_Data_Processing_Function_Bucket.name
+        object = google_storage_bucket_object.daily_data_processing_function.name
+      }
+    }
+    environment_variables = {
 
-    BIGQUERY_TABLE   = var.bigquery_table
-    BIGQUERY_DATASET = var.bigquery_dataset
-    TEMP_GCS_BUCKET  = var.temp_gcs_bucket
+      BIGQUERY_TABLE   = var.bigquery_table
+      BIGQUERY_DATASET = var.bigquery_dataset
+      TEMP_GCS_BUCKET  = var.temp_gcs_bucket
 
+    }
+  }
+  service_config {
+    max_instance_count    = 2
+    available_memory      = "2048M"
+    timeout_seconds       = 3600
+    service_account_email = var.appengine_service_account
+    ingress_settings      = "ALLOW_ALL"
   }
   depends_on = [
     google_storage_bucket.Daily_Data_Processing_Function_Bucket,
