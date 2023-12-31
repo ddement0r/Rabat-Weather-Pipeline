@@ -94,11 +94,14 @@ resource "google_cloud_scheduler_job" "initial_data_retrieval" {
   name        = var.initial_data_retrieval_schedule
   description = "This cron will trigger the initial cloud function to populate the data and will be disabled"
   schedule    = "30 22 * * *"
-  time_zone   = "UTC + 1"
+  time_zone   = "Africa/Casablanca"
   region      = var.region
   http_target {
     uri         = google_cloudfunctions2_function.initial-data-retrieval.service_config[0].uri
     http_method = "GET"
+    oidc_token {
+      service_account_email = var.appengine_service_account
+    }
   }
   depends_on = [
     google_cloudfunctions2_function.initial-data-retrieval
@@ -109,15 +112,24 @@ resource "google_cloud_scheduler_job" "daily_data_retrieval" {
   name        = var.daily_data_retrieval_schedule
   description = "This cron will trigger the daily cloud function to populate the data"
   schedule    = "30 23 * * *"
-  time_zone   = "UTC + 1"
+  time_zone   = "Africa/Casablanca"
   region      = var.region
   http_target {
     uri         = google_cloudfunctions2_function.daily-data-retrieval.service_config[0].uri
     http_method = "GET"
+    oidc_token {
+      service_account_email = var.appengine_service_account
+    }
   }
   depends_on = [
     google_cloudfunctions2_function.daily-data-retrieval
   ]
+}
+
+resource "google_project_iam_member" "allow_cloud_function_invocation" {
+  project = var.project_id
+  role    = "roles/cloudfunctions.invoker"
+  member  = "serviceAccount:${var.appengine_service_account}"
 }
 
 # Creating Cloud Function for Data Ingestion
@@ -135,6 +147,14 @@ resource "google_cloudfunctions2_function" "initial-data-retrieval" {
         object = google_storage_bucket_object.initial_data_retrieval_function.name
       }
     }
+
+  }
+  service_config {
+    max_instance_count    = 2
+    available_memory      = "2048M"
+    timeout_seconds       = 3600
+    service_account_email = var.appengine_service_account
+    ingress_settings      = "ALLOW_ALL"
     environment_variables = {
 
       "WEATHER_API_BASE_URL"        = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
@@ -146,16 +166,9 @@ resource "google_cloudfunctions2_function" "initial-data-retrieval" {
       "SCHEDULER_JOB_NAME"          = var.initial_data_retrieval_schedule
       "GCP_LOCATION"                = var.region
       "GCP_PROJECT_ID"              = var.project_id
-      "WEATHER_API_KEY"             = var.api_keyV1
+      "WEATHER_API_KEY"             = file("../API_KEY.txt")
       "INITIAL_PROCESSING_ENDPOINT" = google_cloudfunctions2_function.initial-data-processing.service_config[0].uri
     }
-  }
-  service_config {
-    max_instance_count    = 2
-    available_memory      = "2048M"
-    timeout_seconds       = 3600
-    service_account_email = var.appengine_service_account
-    ingress_settings      = "ALLOW_ALL"
   }
 
   depends_on = [
@@ -178,6 +191,14 @@ resource "google_cloudfunctions2_function" "daily-data-retrieval" {
         object = google_storage_bucket_object.daily_data_retrieval_function.name
       }
     }
+
+  }
+  service_config {
+    max_instance_count    = 2
+    available_memory      = "2048M"
+    timeout_seconds       = 3600
+    service_account_email = var.appengine_service_account
+    ingress_settings      = "ALLOW_ALL"
     environment_variables = {
 
       WEATHER_API_BASE_URL        = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline"
@@ -190,17 +211,10 @@ resource "google_cloudfunctions2_function" "daily-data-retrieval" {
       GCP_LOCATION                = var.region
       GCP_PROJECT_ID              = var.project_id
       TEMP_GCS_BUCKET             = var.temp_gcs_bucket
-      "WEATHER_API_KEY"           = var.api_keyV1
+      "WEATHER_API_KEY"           = file("../API_KEY.txt")
       "DAILY_PROCESSING_ENDPOINT" = google_cloudfunctions2_function.daily-data-processing.service_config[0].uri
 
     }
-  }
-  service_config {
-    max_instance_count    = 2
-    available_memory      = "2048M"
-    timeout_seconds       = 3600
-    service_account_email = var.appengine_service_account
-    ingress_settings      = "ALLOW_ALL"
   }
 
   depends_on = [
@@ -211,7 +225,7 @@ resource "google_cloudfunctions2_function" "daily-data-retrieval" {
 }
 
 resource "google_cloudfunctions2_function" "initial-data-processing" {
-  name        = "load-to-bq"
+  name        = "initial_data_processing"
   description = "This function is responsible for processing the historical weather data and storing it in a BigQuery table."
   location    = var.region
 
@@ -224,11 +238,7 @@ resource "google_cloudfunctions2_function" "initial-data-processing" {
         object = google_storage_bucket_object.initial_data_processing_function.name
       }
     }
-    environment_variables = {
-      BIGQUERY_TABLE   = var.bigquery_table
-      BIGQUERY_DATASET = var.bigquery_dataset
-      GCS_BUCKET       = var.gcs_bucket
-    }
+
   }
   service_config {
     max_instance_count    = 2
@@ -236,6 +246,11 @@ resource "google_cloudfunctions2_function" "initial-data-processing" {
     timeout_seconds       = 3600
     service_account_email = var.appengine_service_account
     ingress_settings      = "ALLOW_ALL"
+    environment_variables = {
+      BIGQUERY_TABLE   = var.bigquery_table
+      BIGQUERY_DATASET = var.bigquery_dataset
+      GCS_BUCKET       = var.gcs_bucket
+    }
   }
 
   depends_on = [
@@ -258,13 +273,7 @@ resource "google_cloudfunctions2_function" "daily-data-processing" {
         object = google_storage_bucket_object.daily_data_processing_function.name
       }
     }
-    environment_variables = {
 
-      BIGQUERY_TABLE   = var.bigquery_table
-      BIGQUERY_DATASET = var.bigquery_dataset
-      TEMP_GCS_BUCKET  = var.temp_gcs_bucket
-
-    }
   }
   service_config {
     max_instance_count    = 2
@@ -272,6 +281,13 @@ resource "google_cloudfunctions2_function" "daily-data-processing" {
     timeout_seconds       = 3600
     service_account_email = var.appengine_service_account
     ingress_settings      = "ALLOW_ALL"
+    environment_variables = {
+
+      BIGQUERY_TABLE   = var.bigquery_table
+      BIGQUERY_DATASET = var.bigquery_dataset
+      TEMP_GCS_BUCKET  = var.temp_gcs_bucket
+
+    }
   }
   depends_on = [
     google_storage_bucket.Daily_Data_Processing_Function_Bucket,
@@ -290,4 +306,20 @@ resource "google_bigquery_dataset" "Weather_Dataset" {
     role          = "OWNER"
     user_by_email = var.appengine_service_account
   }
+  access {
+    role          = "OWNER"
+    user_by_email = "abdelhamidnajmi100@gmail.com"
+  }
+  access {
+    role          = "OWNER"
+    user_by_email = "terraform-sa@rabat-weather-pipeline.iam.gserviceaccount.com"
+  }
+}
+
+resource "google_bigquery_table" "Weather_Table" {
+  dataset_id          = var.bigquery_dataset
+  table_id            = var.bigquery_table
+  deletion_protection = false
+  schema              = jsonencode(var.schema)
+  depends_on          = [google_bigquery_dataset.Weather_Dataset]
 }

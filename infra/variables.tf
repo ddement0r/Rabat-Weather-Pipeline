@@ -65,14 +65,193 @@ variable "bigquery_table" {
   default = "CleanedWeatherData"
 }
 
-variable "api_keyV1" {
-  default = "GMAXH2TBPZFX3VM24J3EAABCE"
-}
-
-variable "api_keyV2" {
-  default = "K2QSGXPXL29WZJRTFWBFMW6GD"
-}
-
 variable "appengine_service_account" {
   default = "rabat-weather-pipeline@appspot.gserviceaccount.com"
+}
+
+variable "schema" {
+  default = [
+    {
+      "name" : "date",
+      "mode" : "NULLABLE",
+      "type" : "DATE",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "tempmax",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "tempmin",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "temp",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "feelslikemax",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "feelslikemin",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "feelslike",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "dew",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "humidity",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "precip",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "precipprob",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "precipcover",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "snow",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "snowdepth",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "windgust",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "windspeed",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "winddir",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "sealevelpressure",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "cloudcover",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "visibility",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "solarradiation",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "solarenergy",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "uvindex",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "sunrise",
+      "mode" : "NULLABLE",
+      "type" : "TIME",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "sunset",
+      "mode" : "NULLABLE",
+      "type" : "TIME",
+      "description" : null,
+      "fields" : []
+    },
+    {
+      "name" : "moonphase",
+      "mode" : "NULLABLE",
+      "type" : "FLOAT",
+      "description" : null,
+      "fields" : []
+    }
+  ]
 }
